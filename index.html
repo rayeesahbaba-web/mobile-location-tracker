@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Number Location Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="tel"] {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .result h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .info-value {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .error.show {
+            display: block;
+        }
+        
+        #map {
+            width: 100%;
+            height: 300px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        #map.show {
+            display: block;
+        }
+        
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        .loader.show {
+            display: block;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Mobile Location Tracker</h1>
+        <p class="subtitle">Track mobile number location information</p>
+        
+        <div class="input-group">
+            <label for="phoneNumber">Enter Mobile Number</label>
+            <input type="tel" id="phoneNumber" placeholder="+1234567890" />
+        </div>
+        
+        <button class="btn" onclick="trackLocation()">Track Location</button>
+        
+        <div class="loader" id="loader"></div>
+        <div class="error" id="error"></div>
+        
+        <div class="result" id="result">
+            <h3>📍 Location Information</h3>
+            <div id="locationData"></div>
+        </div>
+        
+        <div id="map"></div>
+        
+        <div class="note">
+            <strong>Note:</strong> This tracker provides approximate location based on country code and carrier information. For privacy reasons, exact real-time GPS location tracking requires user consent and is not available through public APIs.
+        </div>
+    </div>
+    
+    <script>
+        function trackLocation() {
+            const phoneNumber = document.getElementById('phoneNumber').value.trim();
+            const loader = document.getElementById('loader');
+            const error = document.getElementById('error');
+            const result = document.getElementById('result');
+            const map = document.getElementById('map');
+            
+            // Reset displays
+            error.classList.remove('show');
+            result.classList.remove('show');
+            map.classList.remove('show');
+            
+            if (!phoneNumber) {
+                showError('Please enter a mobile number');
+                return;
+            }
+            
+            // Show loader
+            loader.classList.add('show');
+            
+            // Simulate API call (in real implementation, this would call a phone number lookup API)
+            setTimeout(() => {
+                loader.classList.remove('show');
+                
+                // Parse phone number
+                const countryCode = phoneNumber.substring(0, 3);
+                const locationInfo = getLocationFromCountryCode(countryCode);
+                
+                if (locationInfo) {
+                    displayLocationInfo(locationInfo, phoneNumber);
+                } else {
+                    showError('Unable to determine location. Please check the number format.');
+                }
+            }, 1500);
+        }
+        
+        function getLocationFromCountryCode(code) {
+            const locations = {
+                '+1': { country: 'United States/Canada', region: 'North America', timezone: 'Multiple', carrier: 'Various' },
+                '+44': { country: 'United Kingdom', region: 'Europe', timezone: 'GMT/BST', carrier: 'Various' },
+                '+91': { country: 'India', region: 'Asia', timezone: 'IST (UTC+5:30)', carrier: 'Various' },
+                '+86': { country: 'China', region: 'Asia', timezone: 'CST (UTC+8)', carrier: 'Various' },
+                '+81': { country: 'Japan', region: 'Asia', timezone: 'JST (UTC+9)', carrier: 'Various' },
+                '+49': { country: 'Germany', region: 'Europe', timezone: 'CET/CEST', carrier: 'Various' },
+                '+33': { country: 'France', region: 'Europe', timezone: 'CET/CEST', carrier: 'Various' },
+                '+61': { country: 'Australia', region: 'Oceania', timezone: 'Multiple', carrier: 'Various' },
+                '+55': { country: 'Brazil', region: 'South America', timezone: 'Multiple', carrier: 'Various' },
+                '+7': { country: 'Russia/Kazakhstan', region: 'Europe/Asia', timezone: 'Multiple', carrier: 'Various' }
+            };
+            
+            return locations[code] || null;
+        }
+        
+        function displayLocationInfo(info, phoneNumber) {
+            const locationData = document.getElementById('locationData');
+            const result = document.getElementById('result');
+            
+            locationData.innerHTML = `
+                <div class="info-item">
+                    <span class="info-label">Phone Number:</span>
+                    <span class="info-value">${phoneNumber}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Country:</span>
+                    <span class="info-value">${info.country}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Region:</span>
+                    <span class="info-value">${info.region}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Timezone:</span>
+                    <span class="info-value">${info.timezone}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Carrier:</span>
+                    <span class="info-value">${info.carrier}</span>
+                </div>
+            `;
+            
+            result.classList.add('show');
+        }
+        
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.classList.add('show');
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('phoneNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                trackLocation();
+            }
+        });
+    </script>
+</body>
+</html>
