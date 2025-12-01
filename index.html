@@ -145,6 +145,7 @@
         .info-value {
             color: #333;
             font-weight: 600;
+            text-align: right;
         }
         
         .error {
@@ -157,18 +158,6 @@
         }
         
         .error.show {
-            display: block;
-        }
-        
-        #map {
-            width: 100%;
-            height: 300px;
-            border-radius: 10px;
-            margin-top: 20px;
-            display: none;
-        }
-        
-        #map.show {
             display: block;
         }
         
@@ -201,6 +190,25 @@
             font-size: 13px;
             color: #856404;
         }
+
+        .examples {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+            font-size: 13px;
+            color: #0d47a1;
+        }
+
+        .examples strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .examples div {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -209,11 +217,19 @@
         <p class="subtitle">Track mobile number location information</p>
         
         <div class="input-group">
-            <label for="phoneNumber">Enter Mobile Number</label>
-            <input type="tel" id="phoneNumber" placeholder="+1234567890" />
+            <label for="phoneNumber">Enter Mobile Number (with country code)</label>
+            <input type="tel" id="phoneNumber" placeholder="+919876543210" />
         </div>
         
         <button class="btn" onclick="trackLocation()">Track Location</button>
+        
+        <div class="examples">
+            <strong>📝 Example formats:</strong>
+            <div>🇮🇳 India: +919876543210</div>
+            <div>🇺🇸 USA: +11234567890</div>
+            <div>🇬🇧 UK: +447911123456</div>
+            <div>🇦🇪 UAE: +971501234567</div>
+        </div>
         
         <div class="loader" id="loader"></div>
         <div class="error" id="error"></div>
@@ -223,10 +239,8 @@
             <div id="locationData"></div>
         </div>
         
-        <div id="map"></div>
-        
         <div class="note">
-            <strong>Note:</strong> This tracker provides approximate location based on country code and carrier information. For privacy reasons, exact real-time GPS location tracking requires user consent and is not available through public APIs.
+            <strong>⚠️ Important:</strong> This tracker provides approximate location based on country code analysis. Exact real-time GPS tracking requires carrier access and user consent, which is not publicly available for privacy and legal reasons.
         </div>
     </div>
     
@@ -236,49 +250,152 @@
             const loader = document.getElementById('loader');
             const error = document.getElementById('error');
             const result = document.getElementById('result');
-            const map = document.getElementById('map');
             
             // Reset displays
             error.classList.remove('show');
             result.classList.remove('show');
-            map.classList.remove('show');
             
             if (!phoneNumber) {
-                showError('Please enter a mobile number');
+                showError('⚠️ Please enter a mobile number');
+                return;
+            }
+
+            if (!phoneNumber.startsWith('+')) {
+                showError('⚠️ Please include country code (e.g., +91 for India)');
                 return;
             }
             
             // Show loader
             loader.classList.add('show');
             
-            // Simulate API call (in real implementation, this would call a phone number lookup API)
+            // Simulate API processing
             setTimeout(() => {
                 loader.classList.remove('show');
                 
-                // Parse phone number
-                const countryCode = phoneNumber.substring(0, 3);
+                // Extract country code (1-4 digits after +)
+                let countryCode = '';
+                for (let i = 1; i <= 4 && i < phoneNumber.length; i++) {
+                    const testCode = phoneNumber.substring(0, i + 1);
+                    if (getLocationFromCountryCode(testCode)) {
+                        countryCode = testCode;
+                    }
+                }
+                
                 const locationInfo = getLocationFromCountryCode(countryCode);
                 
                 if (locationInfo) {
                     displayLocationInfo(locationInfo, phoneNumber);
                 } else {
-                    showError('Unable to determine location. Please check the number format.');
+                    showError('❌ Unable to determine location. Please check the country code format.');
                 }
-            }, 1500);
+            }, 1000);
         }
         
         function getLocationFromCountryCode(code) {
             const locations = {
-                '+1': { country: 'United States/Canada', region: 'North America', timezone: 'Multiple', carrier: 'Various' },
-                '+44': { country: 'United Kingdom', region: 'Europe', timezone: 'GMT/BST', carrier: 'Various' },
-                '+91': { country: 'India', region: 'Asia', timezone: 'IST (UTC+5:30)', carrier: 'Various' },
-                '+86': { country: 'China', region: 'Asia', timezone: 'CST (UTC+8)', carrier: 'Various' },
-                '+81': { country: 'Japan', region: 'Asia', timezone: 'JST (UTC+9)', carrier: 'Various' },
-                '+49': { country: 'Germany', region: 'Europe', timezone: 'CET/CEST', carrier: 'Various' },
-                '+33': { country: 'France', region: 'Europe', timezone: 'CET/CEST', carrier: 'Various' },
-                '+61': { country: 'Australia', region: 'Oceania', timezone: 'Multiple', carrier: 'Various' },
-                '+55': { country: 'Brazil', region: 'South America', timezone: 'Multiple', carrier: 'Various' },
-                '+7': { country: 'Russia/Kazakhstan', region: 'Europe/Asia', timezone: 'Multiple', carrier: 'Various' }
+                '+1': { country: 'United States / Canada', region: 'North America', timezone: 'EST/PST/CST/MST', carrier: 'AT&T, Verizon, T-Mobile', flag: '🇺🇸🇨🇦' },
+                '+7': { country: 'Russia / Kazakhstan', region: 'Europe/Asia', timezone: 'MSK (UTC+3)', carrier: 'MTS, Beeline, MegaFon', flag: '🇷🇺🇰🇿' },
+                '+20': { country: 'Egypt', region: 'Africa', timezone: 'EET (UTC+2)', carrier: 'Vodafone, Orange, Etisalat', flag: '🇪🇬' },
+                '+27': { country: 'South Africa', region: 'Africa', timezone: 'SAST (UTC+2)', carrier: 'MTN, Vodacom, Cell C', flag: '🇿🇦' },
+                '+30': { country: 'Greece', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Cosmote, Vodafone, Wind', flag: '🇬🇷' },
+                '+31': { country: 'Netherlands', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'KPN, Vodafone, T-Mobile', flag: '🇳🇱' },
+                '+32': { country: 'Belgium', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Proximus, Orange, Base', flag: '🇧🇪' },
+                '+33': { country: 'France', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Orange, SFR, Bouygues', flag: '🇫🇷' },
+                '+34': { country: 'Spain', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Movistar, Vodafone, Orange', flag: '🇪🇸' },
+                '+36': { country: 'Hungary', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telekom, Telenor, Vodafone', flag: '🇭🇺' },
+                '+39': { country: 'Italy', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'TIM, Vodafone, Wind Tre', flag: '🇮🇹' },
+                '+40': { country: 'Romania', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Orange, Vodafone, Telekom', flag: '🇷🇴' },
+                '+41': { country: 'Switzerland', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Swisscom, Sunrise, Salt', flag: '🇨🇭' },
+                '+43': { country: 'Austria', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'A1, T-Mobile, Drei', flag: '🇦🇹' },
+                '+44': { country: 'United Kingdom', region: 'Europe', timezone: 'GMT (UTC+0)', carrier: 'EE, O2, Vodafone, Three', flag: '🇬🇧' },
+                '+45': { country: 'Denmark', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'TDC, Telenor, Telia', flag: '🇩🇰' },
+                '+46': { country: 'Sweden', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telia, Telenor, Tre', flag: '🇸🇪' },
+                '+47': { country: 'Norway', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telenor, Telia, Ice', flag: '🇳🇴' },
+                '+48': { country: 'Poland', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Orange, T-Mobile, Plus', flag: '🇵🇱' },
+                '+49': { country: 'Germany', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telekom, Vodafone, O2', flag: '🇩🇪' },
+                '+51': { country: 'Peru', region: 'South America', timezone: 'PET (UTC-5)', carrier: 'Movistar, Claro, Entel', flag: '🇵🇪' },
+                '+52': { country: 'Mexico', region: 'North America', timezone: 'CST (UTC-6)', carrier: 'Telcel, Movistar, AT&T', flag: '🇲🇽' },
+                '+53': { country: 'Cuba', region: 'Caribbean', timezone: 'CST (UTC-5)', carrier: 'ETECSA', flag: '🇨🇺' },
+                '+54': { country: 'Argentina', region: 'South America', timezone: 'ART (UTC-3)', carrier: 'Movistar, Claro, Personal', flag: '🇦🇷' },
+                '+55': { country: 'Brazil', region: 'South America', timezone: 'BRT (UTC-3)', carrier: 'Vivo, Claro, TIM, Oi', flag: '🇧🇷' },
+                '+56': { country: 'Chile', region: 'South America', timezone: 'CLT (UTC-4)', carrier: 'Movistar, Entel, Claro', flag: '🇨🇱' },
+                '+57': { country: 'Colombia', region: 'South America', timezone: 'COT (UTC-5)', carrier: 'Claro, Movistar, Tigo', flag: '🇨🇴' },
+                '+58': { country: 'Venezuela', region: 'South America', timezone: 'VET (UTC-4)', carrier: 'Movistar, Digitel, Movilnet', flag: '🇻🇪' },
+                '+60': { country: 'Malaysia', region: 'Asia', timezone: 'MYT (UTC+8)', carrier: 'Maxis, Celcom, Digi', flag: '🇲🇾' },
+                '+61': { country: 'Australia', region: 'Oceania', timezone: 'AEST (UTC+10)', carrier: 'Telstra, Optus, Vodafone', flag: '🇦🇺' },
+                '+62': { country: 'Indonesia', region: 'Asia', timezone: 'WIB (UTC+7)', carrier: 'Telkomsel, Indosat, XL', flag: '🇮🇩' },
+                '+63': { country: 'Philippines', region: 'Asia', timezone: 'PHT (UTC+8)', carrier: 'Globe, Smart, DITO', flag: '🇵🇭' },
+                '+64': { country: 'New Zealand', region: 'Oceania', timezone: 'NZST (UTC+12)', carrier: 'Spark, Vodafone, 2degrees', flag: '🇳🇿' },
+                '+65': { country: 'Singapore', region: 'Asia', timezone: 'SGT (UTC+8)', carrier: 'Singtel, StarHub, M1', flag: '🇸🇬' },
+                '+66': { country: 'Thailand', region: 'Asia', timezone: 'ICT (UTC+7)', carrier: 'AIS, DTAC, TrueMove', flag: '🇹🇭' },
+                '+81': { country: 'Japan', region: 'Asia', timezone: 'JST (UTC+9)', carrier: 'NTT Docomo, au, SoftBank', flag: '🇯🇵' },
+                '+82': { country: 'South Korea', region: 'Asia', timezone: 'KST (UTC+9)', carrier: 'SK Telecom, KT, LG U+', flag: '🇰🇷' },
+                '+84': { country: 'Vietnam', region: 'Asia', timezone: 'ICT (UTC+7)', carrier: 'Viettel, Vinaphone, MobiFone', flag: '🇻🇳' },
+                '+86': { country: 'China', region: 'Asia', timezone: 'CST (UTC+8)', carrier: 'China Mobile, China Unicom', flag: '🇨🇳' },
+                '+90': { country: 'Turkey', region: 'Europe/Asia', timezone: 'TRT (UTC+3)', carrier: 'Turkcell, Vodafone, Turk Telekom', flag: '🇹🇷' },
+                '+91': { country: 'India', region: 'Asia', timezone: 'IST (UTC+5:30)', carrier: 'Airtel, Jio, Vi, BSNL', flag: '🇮🇳' },
+                '+92': { country: 'Pakistan', region: 'Asia', timezone: 'PKT (UTC+5)', carrier: 'Jazz, Telenor, Zong, Ufone', flag: '🇵🇰' },
+                '+93': { country: 'Afghanistan', region: 'Asia', timezone: 'AFT (UTC+4:30)', carrier: 'Afghan Wireless, Roshan', flag: '🇦🇫' },
+                '+94': { country: 'Sri Lanka', region: 'Asia', timezone: 'IST (UTC+5:30)', carrier: 'Dialog, Mobitel, Airtel', flag: '🇱🇰' },
+                '+95': { country: 'Myanmar', region: 'Asia', timezone: 'MMT (UTC+6:30)', carrier: 'MPT, Ooredoo, Telenor', flag: '🇲🇲' },
+                '+98': { country: 'Iran', region: 'Asia', timezone: 'IRST (UTC+3:30)', carrier: 'MCI, Irancell, RighTel', flag: '🇮🇷' },
+                '+212': { country: 'Morocco', region: 'Africa', timezone: 'WET (UTC+0)', carrier: 'Maroc Telecom, Orange, Inwi', flag: '🇲🇦' },
+                '+213': { country: 'Algeria', region: 'Africa', timezone: 'CET (UTC+1)', carrier: 'Mobilis, Djezzy, Ooredoo', flag: '🇩🇿' },
+                '+216': { country: 'Tunisia', region: 'Africa', timezone: 'CET (UTC+1)', carrier: 'Tunisie Telecom, Orange, Ooredoo', flag: '🇹🇳' },
+                '+218': { country: 'Libya', region: 'Africa', timezone: 'EET (UTC+2)', carrier: 'Libyana, Al-Madar', flag: '🇱🇾' },
+                '+220': { country: 'Gambia', region: 'Africa', timezone: 'GMT (UTC+0)', carrier: 'Africell, Gamcel, Comium', flag: '🇬🇲' },
+                '+221': { country: 'Senegal', region: 'Africa', timezone: 'GMT (UTC+0)', carrier: 'Orange, Tigo, Expresso', flag: '🇸🇳' },
+                '+234': { country: 'Nigeria', region: 'Africa', timezone: 'WAT (UTC+1)', carrier: 'MTN, Glo, Airtel, 9mobile', flag: '🇳🇬' },
+                '+254': { country: 'Kenya', region: 'Africa', timezone: 'EAT (UTC+3)', carrier: 'Safaricom, Airtel, Telkom', flag: '🇰🇪' },
+                '+255': { country: 'Tanzania', region: 'Africa', timezone: 'EAT (UTC+3)', carrier: 'Vodacom, Airtel, Tigo', flag: '🇹🇿' },
+                '+256': { country: 'Uganda', region: 'Africa', timezone: 'EAT (UTC+3)', carrier: 'MTN, Airtel, Africell', flag: '🇺🇬' },
+                '+351': { country: 'Portugal', region: 'Europe', timezone: 'WET (UTC+0)', carrier: 'MEO, Vodafone, NOS', flag: '🇵🇹' },
+                '+352': { country: 'Luxembourg', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'POST, Tango, Orange', flag: '🇱🇺' },
+                '+353': { country: 'Ireland', region: 'Europe', timezone: 'GMT (UTC+0)', carrier: 'Three, Vodafone, Eir', flag: '🇮🇪' },
+                '+354': { country: 'Iceland', region: 'Europe', timezone: 'GMT (UTC+0)', carrier: 'Síminn, Vodafone, Nova', flag: '🇮🇸' },
+                '+355': { country: 'Albania', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Vodafone, Telekom, ALBtelecom', flag: '🇦🇱' },
+                '+356': { country: 'Malta', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'GO, Vodafone, Melita', flag: '🇲🇹' },
+                '+357': { country: 'Cyprus', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Cytamobile-Vodafone, MTN', flag: '🇨🇾' },
+                '+358': { country: 'Finland', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Elisa, Telia, DNA', flag: '🇫🇮' },
+                '+370': { country: 'Lithuania', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Telia, Bite, Tele2', flag: '🇱🇹' },
+                '+371': { country: 'Latvia', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'LMT, Tele2, Bite', flag: '🇱🇻' },
+                '+372': { country: 'Estonia', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Telia, Elisa, Tele2', flag: '🇪🇪' },
+                '+380': { country: 'Ukraine', region: 'Europe', timezone: 'EET (UTC+2)', carrier: 'Kyivstar, Vodafone, lifecell', flag: '🇺🇦' },
+                '+381': { country: 'Serbia', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telekom Srbija, Telenor, A1', flag: '🇷🇸' },
+                '+385': { country: 'Croatia', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'T-Mobile, A1, Telemach', flag: '🇭🇷' },
+                '+386': { country: 'Slovenia', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Telekom Slovenije, A1, Telemach', flag: '🇸🇮' },
+                '+387': { country: 'Bosnia and Herzegovina', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'BH Telecom, HT Eronet, m:tel', flag: '🇧🇦' },
+                '+389': { country: 'North Macedonia', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'A1, ONE, Telekom', flag: '🇲🇰' },
+                '+420': { country: 'Czech Republic', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'T-Mobile, O2, Vodafone', flag: '🇨🇿' },
+                '+421': { country: 'Slovakia', region: 'Europe', timezone: 'CET (UTC+1)', carrier: 'Orange, Telekom, O2', flag: '🇸🇰' },
+                '+852': { country: 'Hong Kong', region: 'Asia', timezone: 'HKT (UTC+8)', carrier: 'CSL, 3HK, SmarTone', flag: '🇭🇰' },
+                '+853': { country: 'Macau', region: 'Asia', timezone: 'CST (UTC+8)', carrier: 'CTM, 3 Macau, SmarTone', flag: '🇲🇴' },
+                '+855': { country: 'Cambodia', region: 'Asia', timezone: 'ICT (UTC+7)', carrier: 'Smart, Cellcard, Metfone', flag: '🇰🇭' },
+                '+856': { country: 'Laos', region: 'Asia', timezone: 'ICT (UTC+7)', carrier: 'Lao Telecom, Unitel, ETL', flag: '🇱🇦' },
+                '+880': { country: 'Bangladesh', region: 'Asia', timezone: 'BST (UTC+6)', carrier: 'Grameenphone, Robi, Banglalink', flag: '🇧🇩' },
+                '+886': { country: 'Taiwan', region: 'Asia', timezone: 'CST (UTC+8)', carrier: 'Chunghwa, Taiwan Mobile, FarEasTone', flag: '🇹🇼' },
+                '+960': { country: 'Maldives', region: 'Asia', timezone: 'MVT (UTC+5)', carrier: 'Dhiraagu, Ooredoo', flag: '🇲🇻' },
+                '+961': { country: 'Lebanon', region: 'Asia', timezone: 'EET (UTC+2)', carrier: 'Alfa, touch', flag: '🇱🇧' },
+                '+962': { country: 'Jordan', region: 'Asia', timezone: 'EET (UTC+2)', carrier: 'Zain, Orange, Umniah', flag: '🇯🇴' },
+                '+963': { country: 'Syria', region: 'Asia', timezone: 'EET (UTC+2)', carrier: 'Syriatel, MTN', flag: '🇸🇾' },
+                '+964': { country: 'Iraq', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'Zain, Asiacell, Korek', flag: '🇮🇶' },
+                '+965': { country: 'Kuwait', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'Zain, Ooredoo, STC', flag: '🇰🇼' },
+                '+966': { country: 'Saudi Arabia', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'STC, Mobily, Zain', flag: '🇸🇦' },
+                '+967': { country: 'Yemen', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'Yemen Mobile, MTN, Sabafon', flag: '🇾🇪' },
+                '+968': { country: 'Oman', region: 'Asia', timezone: 'GST (UTC+4)', carrier: 'Omantel, Ooredoo', flag: '🇴🇲' },
+                '+971': { country: 'United Arab Emirates', region: 'Asia', timezone: 'GST (UTC+4)', carrier: 'Etisalat, du', flag: '🇦🇪' },
+                '+972': { country: 'Israel', region: 'Asia', timezone: 'IST (UTC+2)', carrier: 'Cellcom, Partner, Pelephone', flag: '🇮🇱' },
+                '+973': { country: 'Bahrain', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'Batelco, Zain, STC', flag: '🇧🇭' },
+                '+974': { country: 'Qatar', region: 'Asia', timezone: 'AST (UTC+3)', carrier: 'Ooredoo, Vodafone', flag: '🇶🇦' },
+                '+975': { country: 'Bhutan', region: 'Asia', timezone: 'BTT (UTC+6)', carrier: 'B-Mobile, TashiCell', flag: '🇧🇹' },
+                '+976': { country: 'Mongolia', region: 'Asia', timezone: 'ULAT (UTC+8)', carrier: 'Mobicom, Unitel, Skytel', flag: '🇲🇳' },
+                '+977': { country: 'Nepal', region: 'Asia', timezone: 'NPT (UTC+5:45)', carrier: 'Ncell, NTC, Smart Cell', flag: '🇳🇵' },
+                '+992': { country: 'Tajikistan', region: 'Asia', timezone: 'TJT (UTC+5)', carrier: 'Tcell, Megafon, Babilon-M', flag: '🇹🇯' },
+                '+993': { country: 'Turkmenistan', region: 'Asia', timezone: 'TMT (UTC+5)', carrier: 'Altyn Asyr, TM-Cell', flag: '🇹🇲' },
+                '+994': { country: 'Azerbaijan', region: 'Asia', timezone: 'AZT (UTC+4)', carrier: 'Azercell, Bakcell, Nar', flag: '🇦🇿' },
+                '+995': { country: 'Georgia', region: 'Asia', timezone: 'GET (UTC+4)', carrier: 'Magticom, Beeline, Silknet', flag: '🇬🇪' },
+                '+996': { country: 'Kyrgyzstan', region: 'Asia', timezone: 'KGT (UTC+6)', carrier: 'Beeline, MegaCom, O!', flag: '🇰🇬' },
+                '+998': { country: 'Uzbekistan', region: 'Asia', timezone: 'UZT (UTC+5)', carrier: 'Ucell, Beeline, UMS', flag: '🇺🇿' }
             };
             
             return locations[code] || null;
@@ -288,14 +405,21 @@
             const locationData = document.getElementById('locationData');
             const result = document.getElementById('result');
             
+            const numberLength = phoneNumber.length;
+            const status = numberLength >= 10 ? '✅ Valid Format' : '⚠️ May be incomplete';
+            
             locationData.innerHTML = `
                 <div class="info-item">
                     <span class="info-label">Phone Number:</span>
                     <span class="info-value">${phoneNumber}</span>
                 </div>
                 <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value">${status}</span>
+                </div>
+                <div class="info-item">
                     <span class="info-label">Country:</span>
-                    <span class="info-value">${info.country}</span>
+                    <span class="info-value">${info.flag} ${info.country}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Region:</span>
@@ -306,7 +430,7 @@
                     <span class="info-value">${info.timezone}</span>
                 </div>
                 <div class="info-item">
-                    <span class="info-label">Carrier:</span>
+                    <span class="info-label">Major Carriers:</span>
                     <span class="info-value">${info.carrier}</span>
                 </div>
             `;
